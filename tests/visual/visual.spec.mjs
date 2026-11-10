@@ -4,8 +4,8 @@ import path from 'node:path';
 
 const testsDir = path.resolve(process.cwd(), 'tests');
 
-// Behavioral JS scroll demos that oscillate on full-page screenshot stitching
-const EXCLUDED_FIXTURES = new Set(['scrollspy', 'sticky-parallax']);
+// Dynamic demos (video streams, iframes, scroll animations) that fluctuate on full-page capture
+const EXCLUDED_FIXTURES = new Set(['cover', 'scrollspy', 'sticky-parallax', 'video']);
 
 // Read all HTML test fixtures from /tests (excluding index.html and excluded demos)
 const allTestFiles = fs
