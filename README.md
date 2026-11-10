@@ -127,6 +127,61 @@ Open <http://localhost:4000/> to browse the documentation site.
 - Keep dependencies intentional and review them periodically.
 - Do not commit copyrighted or restricted assets without confirmed redistribution rights.
 
+## Visual regression testing (Local)
+
+Gloss includes a lightweight, local-only visual snapshot testing tool powered by Playwright to catch unintended visual regressions across viewports (Desktop `1200px`, Tablet `768px`, Mobile `375px`) without committing binary images to Git.
+
+Snapshot baselines and test reports are kept local and ignored by `.gitignore` (`tests/visual/__snapshots__/`, `playwright-report/`).
+
+### Prerequisites
+
+Ensure the Playwright Chromium browser is installed locally:
+
+```bash
+npx playwright install chromium
+```
+
+### Comparing branches
+
+You can compare any two Git branches locally. The script automatically checks out the base branch, compiles its CSS, captures baseline snapshots, switches to the target branch, compiles its CSS, runs the visual diff comparison, and returns you safely to your starting branch:
+
+```bash
+# Compare any two branches across all test fixtures:
+npm run test:visual:diff -- <base-branch> <target-branch>
+
+# Compare any two branches for a specific fixture (e.g., button, body, list):
+npm run test:visual:diff -- <base-branch> <target-branch> [fixture-filter]
+
+# Examples:
+npm run test:visual:diff -- main my-feature-branch
+npm run test:visual:diff -- main my-feature-branch button
+```
+
+### Inspecting visual diffs
+
+If visual differences are detected, open Playwright's interactive visual report:
+
+```bash
+npx playwright show-report
+```
+
+This launches a local browser view with interactive slider/swipe and side-by-side modes highlighting the exact pixel diffs between the two branches.
+
+### Single-branch testing
+
+To run visual checks or update baselines on your current branch without switching branches:
+
+```bash
+# Run comparison against existing local baselines:
+npm run test:visual
+
+# Generate or update local baselines on the current branch:
+npm run test:visual:update
+
+# Run on a single fixture:
+VISUAL_TEST=body npm run test:visual
+```
+
 ## Roadmap
 
 Development will proceed in small, validated stages:

@@ -25,6 +25,7 @@ _site/
 coverage/
 playwright-report/
 test-results/
+tests/visual/__snapshots__/
 
 # Local environment files and secrets
 .env
