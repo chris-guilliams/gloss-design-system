@@ -146,6 +146,12 @@ npx playwright install chromium
 You can compare any two Git branches locally. The script automatically checks out the base branch, compiles its CSS, captures baseline snapshots, switches to the target branch, compiles its CSS, runs the visual diff comparison, and returns you safely to your starting branch:
 
 ```bash
+# Compare current branch against main across all test fixtures:
+npm run test:visual:diff
+
+# Compare current branch against main for a single fixture:
+npm run test:visual:diff -- main [fixture-filter]
+
 # Compare any two branches across all test fixtures:
 npm run test:visual:diff -- <base-branch> <target-branch>
 
@@ -156,6 +162,14 @@ npm run test:visual:diff -- <base-branch> <target-branch> [fixture-filter]
 npm run test:visual:diff -- main my-feature-branch
 npm run test:visual:diff -- main my-feature-branch button
 ```
+
+### Dynamic fixtures & stability
+
+To prevent false positives and test flakiness from runtime JavaScript:
+
+- **Time-based elements** (`countdown`) run on a frozen virtual clock.
+- **Sub-pixel parallax math** in `slider` is masked to prevent scroll-offset jitter.
+- **Continuous media streams and scroll-position demos** (`cover`, `video`, `scrollspy`, `sticky-parallax`) are excluded from visual crawls.
 
 ### Inspecting visual diffs
 
