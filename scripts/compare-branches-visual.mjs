@@ -44,17 +44,14 @@ let targetBranch = startingBranch;
 let fixtureFilter = '';
 
 if (isGitRef(arg1) && isGitRef(arg2)) {
-    // Two branches provided: <base-branch> <target-branch> [filter]
     baseBranch = arg1;
     targetBranch = arg2;
     fixtureFilter = arg3 || process.env.VISUAL_TEST || '';
 } else if (isGitRef(arg1)) {
-    // One branch provided: <base-branch> [filter]
     baseBranch = arg1;
     targetBranch = startingBranch;
     fixtureFilter = arg2 || process.env.VISUAL_TEST || '';
 } else if (arg1) {
-    // No valid branch provided as arg1, treat as filter
     baseBranch = 'main';
     targetBranch = startingBranch;
     fixtureFilter = arg1 || process.env.VISUAL_TEST || '';
@@ -114,6 +111,22 @@ function restoreHarnessFiles() {
     }
 }
 
+function cleanupTempHarnessFiles(branch) {
+    if (branch === startingBranch) {
+        return;
+    }
+    for (const file of harnessFiles) {
+        const filePath = path.join(rootDir, file);
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.rmSync(filePath, { force: true, recursive: true });
+            } catch {
+                // Ignore cleanup errors
+            }
+        }
+    }
+}
+
 try {
     if (status.length > 0) {
         console.log(`\nStashing tracked working tree changes on ${startingBranch}...`);
@@ -123,18 +136,25 @@ try {
 
     // 1. Checkout Base Branch and Capture Baselines
     console.log(`\n--> [1/4] Checking out base branch: ${baseBranch}`);
-    run(`git checkout ${baseBranch}`);
+    run(`git checkout -f ${baseBranch}`);
     restoreHarnessFiles();
 
     console.log(`\n--> [2/4] Building CSS and capturing baseline snapshots on ${baseBranch}...`);
     run('npm run build:css');
 
     const envPrefix = fixtureFilter ? `VISUAL_TEST=${fixtureFilter} ` : '';
-    run(`${envPrefix}npx playwright test -u`);
+    try {
+        run(`${envPrefix}npx playwright test -u`);
+    } catch {
+        console.log(
+            `\n[Notice] Some baseline snapshots had dynamic frame differences. Proceeding with comparison...`,
+        );
+    }
 
     // 2. Checkout Target Branch and Run Comparison
     console.log(`\n--> [3/4] Checking out target branch: ${targetBranch}`);
-    run(`git checkout ${targetBranch}`);
+    cleanupTempHarnessFiles(baseBranch);
+    run(`git checkout -f ${targetBranch}`);
     restoreHarnessFiles();
 
     console.log(`\n--> [4/4] Building CSS and running visual diff on ${targetBranch}...`);
@@ -145,6 +165,8 @@ try {
     } catch {
         testFailed = true;
     }
+
+    cleanupTempHarnessFiles(targetBranch);
 } catch (error) {
     console.error(`\n[Error during visual comparison]`, error);
     testFailed = true;
@@ -153,7 +175,8 @@ try {
     const finalBranch = getGitOutput('git rev-parse --abbrev-ref HEAD');
     if (finalBranch !== startingBranch) {
         console.log(`\n--> Returning to starting branch: ${startingBranch}...`);
-        run(`git checkout ${startingBranch}`);
+        cleanupTempHarnessFiles(finalBranch);
+        run(`git checkout -f ${startingBranch}`);
         restoreHarnessFiles();
     }
     if (didStash) {

@@ -23,6 +23,18 @@ for (const file of filesToTest) {
         // Wait for Sofia Pro and other web fonts to finish rendering
         await page.evaluate(() => document.fonts.ready);
 
+        // Pause any autoplaying video elements and freeze frame 0
+        await page.evaluate(() => {
+            document.querySelectorAll('video').forEach((v) => {
+                try {
+                    v.pause();
+                    v.currentTime = 0;
+                } catch {
+                    // Ignore video errors in headless
+                }
+            });
+        });
+
         // Capture full page screenshot and compare against baseline
         await expect(page).toHaveScreenshot(`${testName}.png`, {
             fullPage: true,
