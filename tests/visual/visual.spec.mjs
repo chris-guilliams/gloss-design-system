@@ -42,6 +42,19 @@ for (const file of filesToTest) {
             // Proceed if network idle times out on external assets
         }
 
+        // Neutralize parallax scroll transformations to prevent frame drift during full-page stitching
+        await page.addStyleTag({
+            content: `
+                [uk-slider-parallax], [gls-slider-parallax],
+                [uk-parallax], [gls-parallax],
+                [uk-scrollspy], [gls-scrollspy] {
+                    transform: none !important;
+                    animation: none !important;
+                    transition: none !important;
+                }
+            `,
+        });
+
         // Pause any video elements and reset frame to 0
         await page.evaluate(() => {
             document.querySelectorAll('video').forEach((v) => {
@@ -54,11 +67,18 @@ for (const file of filesToTest) {
             });
         });
 
-        // Mask video elements so moving frames do not trigger pixel diffs
+        // Mask elements with dynamic calculations (videos and parallax slider demo)
         const mask = [];
         const videoCount = await page.locator('video').count();
         if (videoCount > 0) {
             mask.push(page.locator('video'));
+        }
+
+        const parallaxSliders = page.locator(
+            '[gls-slider]:has([gls-slider-parallax]), [uk-slider]:has([uk-slider-parallax])',
+        );
+        if ((await parallaxSliders.count()) > 0) {
+            mask.push(parallaxSliders);
         }
 
         // Capture full page screenshot and compare against baseline
